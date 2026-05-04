@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operational Code Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .input-section {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #analyzeBtn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+
+        #analyzeBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        #analyzeBtn:active {
+            transform: translateY(0);
+        }
+
+        #clearBtn:hover {
+            border-color: #667eea;
+            background: #f5f5f5;
+        }
+
+        #results {
+            display: none;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .result-card {
+            background: #f8f9ff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .result-card:hover {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .card-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .card-score {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .card-interpretation {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .section {
+            background: #f8f9ff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section h3 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .tally-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 0;
+        }
+
+        .tally-item {
+            padding: 10px;
+        }
+
+        .tally-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .tally-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .summary-text {
+            font-size: 14px;
+            line-height: 1.8;
+            color: #555;
+        }
+
+        .verbs-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .verb-item {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .verb-item:last-child {
+            border-bottom: none;
+        }
+
+        .verb-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .verb-actor {
+            font-size: 11px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            margin-left: 10px;
+            padding: 2px 8px;
+            background: #e8e8e8;
+            border-radius: 4px;
+        }
+
+        .verb-type {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+            text-transform: capitalize;
+        }
+
+        .verb-type.cooperative {
+            background: #c8e6c9;
+            color: #1b5e20;
+        }
+
+        .verb-type.conflictual {
+            background: #ffcdd2;
+            color: #b71c1c;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .more-verbs {
+            padding: 12px;
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .error {
+            background: #ffebee;
+            border: 2px solid #ef5350;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tally-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Operational Code Analyzer</h1>
+        <p class="subtitle">Paste a political speech or statement to analyze the leader's belief system</p>
+
+        <div class="error" id="errorBox"></div>
+
+        <div class="input-section">
+            <label for="speechInput">Paste speech or statement:</label>
+            <textarea id="speechInput" placeholder="Paste the full text of the speech here..."></textarea>
+        </div>
+
+        <div class="button-group">
+            <button id="analyzeBtn">📊 Analyze Speech</button>
+            <button id="clearBtn">🗑️ Clear</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Analyzing speech...</div>
+        </div>
+
+        <div id="results">
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="card-label">I-1: Approach to Goals</div>
+                    <div class="card-score" id="i1Score">-</div>
+                    <div class="card-interpretation" id="i1Interp">-</div>
+                </div>
+                <div class="result-card">
+                    <div class="card-label">P-1: Political Universe</div>
+                    <div class="card-score" id="p1Score">-</div>
+                    <div class="card-interpretation" id="p1Interp">-</div>
+                </div>
+                <div class="result-card">
+                    <div class="card-label">P-4: Control Over History</div>
+                    <div class="card-score" id="p4Score">-</div>
+                    <div class="card-interpretation" id="p4Interp">-</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>📈 Verb Tally</h3>
+                <div class="tally-grid">
+                    <div class="tally-item">
+                        <div class="tally-label">Self - Cooperative</div>
+                        <div class="tally-value" id="selfCoop">0</div>
+                    </div>
+                    <div class="tally-item">
+                        <div class="tally-label">Self - Conflictual</div>
+                        <div class="tally-value" id="selfConf">0</div>
+                    </div>
+                    <div class="tally-item">
+                        <div class="tally-label">Other - Cooperative</div>
+                        <div class="tally-value" id="otherCoop">0</div>
+                    </div>
+                    <div class="tally-item">
+                        <div class="tally-label">Other - Conflictual</div>
+                        <div class="tally-value" id="otherConf">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>💭 Belief Profile Summary</h3>
+                <div class="summary-text" id="summary"></div>
+            </div>
+
+            <div class="section">
+                <h3>🔤 Detected Verbs (First 25)</h3>
+                <div class="verbs-list" id="verbsList"></div>
+            </div>
+        </div>
+    </div>
+
+   <script>
+    const cooperativeVerbs = new Set([
+        'agree', 'accept', 'ally', 'collaborate', 'cooperate', 'coordinate', 'join', 'merge', 'support', 'unite',
+        'build', 'construct', 'create', 'develop', 'establish', 'expand', 'form', 'foster', 'grow', 'improve',
+        'strengthen', 'accommodate', 'compromise', 'consult', 'dialogue', 'discuss', 'mediate', 'negotiate',
+        'resolve', 'settle', 'aid', 'assist', 'contribute', 'donate', 'encourage', 'grant', 'help', 'offer',
+        'praise', 'promote', 'provide', 'reward', 'share', 'worked', 'work', 'maintain', 'remain', 'hope',
+        'protect', 'defend', 'advance', 'empower', 'invest', 'participate', 'affirm', 'approve', 'authorize',
+        'backed', 'benefit', 'blessed', 'committed', 'commend', 'reinforce', 'fortify', 'champion',
+        'embrace', 'endorse', 'nurture', 'uphold', 'sustain', 'bolster', 'cultivate'
+    ]);
+
+    const conflictualVerbs = new Set([
+        'attack', 'assault', 'bomb', 'destroy', 'fight', 'harm', 'hurt', 'injure', 'invade', 'kill', 'strike',
+        'oppose', 'resist', 'block', 'obstruct', 'impede', 'hinder', 'prevent', 'stop', 'thwart', 'challenge',
+        'threaten', 'intimidate', 'menace', 'coerce', 'blackmail', 'pressure', 'force', 'compel', 'demand',
+        'hate', 'despise', 'detest', 'condemn', 'denounce', 'criticize', 'attack',' accuse', 'blame',
+        'compete', 'conflict', 'disagree', 'dispute', 'quarrel', 'clash', 'contend', 'struggle',
+        'punish', 'sanction', 'penalize', 'fine', 'restrict', 'limit', 'embargo', 'boycott', 'suspend', 'ban',
+        'deceive', 'mislead', 'lie', 'betray', 'trick', 'cheat', 'conspire', 'plot', 'scheme', 'manipulate',
+        'violate', 'infringe', 'breach', 'violates', 'violating', 'harbor', 'oppress','tolerate',
+        'refused', 'reject', 'opposed', 'blocked','resist',  'defied', 'threatened', 'undermine', 'sabotage', 'interfere', 'weaken', 'diminish','cripple',
+        'disable'
+    ]);
+
+    function extractVerbs(text) {
+        const verbs = [];
+        const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+
+        sentences.forEach(sentence => {
+            const lower = sentence.toLowerCase();
+            const isSelf = /\b(we|our|i|my|us|ourselves|america|nation|country|government|administration)\b/.test(lower);
+            const isOther = /\b(they|their|them|he|she|it|his|her|governments|regimes|states|foreign|hostile|opposition|groups|enemies|adversaries|rivals|opponents)\b/.test(lower);
+
+            const allVerbs = Array.from(cooperativeVerbs).concat(Array.from(conflictualVerbs));
+            const verbPattern = new RegExp(`\\b(${allVerbs.join('|')})\\b`, 'gi');
+
+            let match;
+            while ((match = verbPattern.exec(lower)) !== null) {
+                const verb = match[1].toLowerCase();
+                let type = cooperativeVerbs.has(verb) ? 'cooperative' : 'conflictual';
+                let actor = 'self';
+
+                const beforeVerb = sentence.substring(0, match.index).toLowerCase();
+                if (isOther || /\b(they|their|them|he|she|foreign|regime|state|hostile|opposition)\b/.test(beforeVerb)) {
+                    actor = 'other';
+                }
+
+                verbs.push({
+                    verb: verb.charAt(0).toUpperCase() + verb.slice(1),
+                    type: type,
+                    actor: actor,
+                    sentence: sentence.substring(0, 60).trim() + '...'
+                });
+            }
+        });
+        return verbs;
+    }
+
+    function interpretScore(score, type) {
+        if (type === 'i1') {
+            if (score > 0.2) return 'Cooperative strategy';
+            if (score < -0.2) return 'Conflictual strategy';
+            return 'Mixed strategy';
+        } else if (type === 'p1') {
+            if (score > 0.2) return 'Friendly world';
+            if (score < -0.2) return 'Hostile world';
+            return 'Mixed universe';
+        } else if (type === 'p4') {
+            // Updated interpretation for the -1.0 to +1.0 scale
+            if (score > 0.4) return 'High control over events';
+            if (score > -0.2 && score <= 0.4) return 'Moderate/Mixed control';
+            return 'Low control (History driven by others)';
+        }
+    }
+
+    function analyzeSpeech() {
+        const text = document.getElementById('speechInput').value.trim();
+        if (!text.length) return;
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+
+        setTimeout(() => {
+            const verbs = extractVerbs(text);
+            const selfCoop = verbs.filter(v => v.actor === 'self' && v.type === 'cooperative').length;
+            const selfConf = verbs.filter(v => v.actor === 'self' && v.type === 'conflictual').length;
+            const otherCoop = verbs.filter(v => v.actor === 'other' && v.type === 'cooperative').length;
+            const otherConf = verbs.filter(v => v.actor === 'other' && v.type === 'conflictual').length;
+
+            const totalSelf = selfCoop + selfConf;
+            const totalOther = otherCoop + otherConf;
+
+            // CORRECTED FORMULAS
+            const i1 = totalSelf > 0 ? ((selfCoop - selfConf) / totalSelf) : 0;
+            const p1 = totalOther > 0 ? ((otherCoop - otherConf) / totalOther) : 0;
+            
+            // FIXED P-4 formula based on image_98d688.png
+            const p4 = (totalSelf + totalOther) > 0 ? ((totalSelf - totalOther) / (totalSelf + totalOther)) : 0;
+
+            document.getElementById('i1Score').textContent = i1.toFixed(2);
+            document.getElementById('i1Interp').textContent = interpretScore(i1, 'i1');
+            document.getElementById('p1Score').textContent = p1.toFixed(2);
+            document.getElementById('p1Interp').textContent = interpretScore(p1, 'p1');
+            document.getElementById('p4Score').textContent = p4.toFixed(2);
+            document.getElementById('p4Interp').textContent = interpretScore(p4, 'p4');
+
+            document.getElementById('selfCoop').textContent = selfCoop;
+            document.getElementById('selfConf').textContent = selfConf;
+            document.getElementById('otherCoop').textContent = otherCoop;
+            document.getElementById('otherConf').textContent = otherConf;
+
+            // Summary Generation
+            let summary = `This leader perceives a ${interpretScore(p4, 'p4').toLowerCase()}. `;
+            summary += `They view the political universe as ${interpretScore(p1, 'p1').toLowerCase()} `;
+            summary += `and favor a ${interpretScore(i1, 'i1').toLowerCase()}.`;
+            document.getElementById('summary').textContent = summary;
+
+            let verbsHTML = '';
+            verbs.slice(0, 25).forEach(v => {
+                const typeClass = v.type === 'cooperative' ? 'cooperative' : 'conflictual';
+                verbsHTML += `<div class="verb-item">
+                    <span>
+                        <span class="verb-name">${v.verb}</span>
+                        <span class="verb-actor">${v.actor}</span>
+                    </span>
+                    <span class="verb-type ${typeClass}">${v.type}</span>
+                </div>`;
+            });
+            document.getElementById('verbsList').innerHTML = verbsHTML;
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+        }, 600);
+    }
+
+    document.getElementById('analyzeBtn').addEventListener('click', analyzeSpeech);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+        document.getElementById('speechInput').value = '';
+        document.getElementById('results').style.display = 'none';
+    });
+</script>
+</body>
+</html>
